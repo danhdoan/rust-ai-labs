@@ -1,0 +1,11 @@
+# AI models
+*.onnx
+*.pt
+*.pth
+*/models
+
+# environment and credentials
+.env
+
+# build files
+*/target
