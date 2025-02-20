@@ -9,3 +9,6 @@
 
 # build files
 */target
+
+# miscs
+.DS_Store

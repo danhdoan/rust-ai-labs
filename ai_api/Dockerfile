@@ -46,13 +46,10 @@ ENV LD_LIBRARY_PATH=${LIBTORCH}/lib:$LD_LIBRARY_PATH
 # Copy LibTorch runtime files
 COPY --from=builder /usr/local/libtorch /usr/local/libtorch
 
-# Set environment variables
-ENV MODEL_PATH="/models/dummy_model.onnx"
-
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/target/release/ai_api .
 
-# Copy ONNX model files (if required)
+# Copy ONNX model files
 COPY models models
 
 # ===============================================================================
