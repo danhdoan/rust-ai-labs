@@ -1,18 +1,18 @@
 use axum::{http::StatusCode, Json};
 use lazy_static::lazy_static;
-use tract_ndarray::ArrayD;
 use tract_onnx::prelude::*;
 
-use crate::config::ONNX_MODEL;
+use crate::config::{IMAGE_CLASS_PATH, ONNX_MODEL_PATH};
 use crate::errors::{handle_error, ErrorCode, ErrorResponse};
-use crate::types::{InputBatchData, InputData};
+use crate::utils::classes::load_classes;
+use crate::utils::image::preprocess_image;
 
 type OnnxModel = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;
 
 lazy_static! {
     pub static ref MODEL: Arc<OnnxModel> = {
         let model = onnx()
-            .model_for_path(ONNX_MODEL)
+            .model_for_path(ONNX_MODEL_PATH)
             .expect("Failed to load ONNX model")
             .into_optimized()
             .expect("Failed to optimize model")
@@ -21,41 +21,32 @@ lazy_static! {
 
         Arc::new(model)
     };
+    pub static ref CLASSES: Vec<String> =
+        load_classes(IMAGE_CLASS_PATH).expect("Failed to load class file");
 }
 
-pub fn run_sample_inference(payload: InputData) -> Result<f32, (StatusCode, Json<ErrorResponse>)> {
-    let input_tensor = ArrayD::<f32>::from_shape_vec(vec![1, 5], payload.features)
+pub fn run_classification(
+    image_bytes: Vec<u8>,
+) -> Result<String, (StatusCode, Json<ErrorResponse>)> {
+    let tensor = preprocess_image(image_bytes)
         .map_err(|err| handle_error(ErrorCode::InvalidInputData, err))?;
-    let input_tract = Tensor::from(input_tensor);
-    let output = MODEL
-        .run(tvec!(input_tract.into()))
+    let result = MODEL
+        .run(tvec!(tensor.into()))
         .map_err(|err| handle_error(ErrorCode::InferenceFailed, err))?;
 
-    let result = *output[0].to_scalar::<f32>().unwrap();
-    Ok(result)
-}
-
-pub fn run_batch_inference(
-    payload: InputBatchData,
-) -> Result<Vec<f32>, (StatusCode, Json<ErrorResponse>)> {
-    let batch_size = payload.features.len();
-    let num_features = payload.features[0].len();
-
-    let flat_input: Vec<f32> = payload.features.into_iter().flatten().collect();
-    let input_tensor = ArrayD::<f32>::from_shape_vec(vec![batch_size, num_features], flat_input)
-        .map_err(|err| handle_error(ErrorCode::InvalidInputData, err))?;
-
-    let input_tract = Tensor::from(input_tensor);
-
-    let output = MODEL
-        .run(tvec!(input_tract.into()))
-        .map_err(|err| handle_error(ErrorCode::InferenceFailed, err))?;
-
-    let results: Vec<f32> = output[0]
+    let probs = result[0]
         .to_array_view::<f32>()
-        .map_err(|err| handle_error(ErrorCode::OutputConversionFailed, err))?
+        .map_err(|err| handle_error(ErrorCode::OutputConversionFailed, err))?;
+    let (max_idx, _) = probs
         .iter()
-        .cloned()
-        .collect();
-    Ok(results)
+        .enumerate()
+        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
+        .unwrap();
+    if max_idx < CLASSES.len() {
+        return Ok(CLASSES[max_idx].clone());
+    }
+    Err(handle_error(
+        ErrorCode::OutputConversionFailed,
+        "Class Index Out of Bound",
+    ))
 }

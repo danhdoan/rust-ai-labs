@@ -12,3 +12,8 @@
 
 # miscs
 .DS_Store
+
+# data
+*.jpeg
+*.jpg
+*.png
