@@ -1,57 +1,38 @@
-use crate::errors::{handle_error, ErrorCode, ErrorResponse};
-use crate::model::{run_batch_inference, run_sample_inference};
-use crate::types::{BatchPrediction, InputBatchData, InputData, Prediction};
+use crate::errors::ErrorResponse;
+use crate::model::run_classification;
+use crate::types::{ImageInput, ImagePrediction};
 use axum::{http::StatusCode, Json};
+use base64::decode;
 use std::time::Instant;
-use tracing::info;
 
-pub async fn predict(
-    Json(payload): Json<InputData>,
-) -> Result<(StatusCode, Json<Prediction>), (StatusCode, Json<ErrorResponse>)> {
-    info!("Payload: {:?}", &payload.features);
+use crate::utils::common::log_elapsed_time;
 
+pub async fn classify(
+    Json(payload): Json<ImageInput>,
+) -> Result<(StatusCode, Json<ImagePrediction>), (StatusCode, Json<ErrorResponse>)> {
     let start_time = Instant::now();
-    if payload.features.len() != 5 {
-        return Err(handle_error(
-            ErrorCode::InvalidInputData,
-            "Invalid input shape",
+    let image_bytes = decode(payload.image).map_err(|_| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "Invalid Base64 input".to_string(),
+            }),
+        )
+    })?;
+
+    if image_bytes.is_empty() {
+        return Err((
+            StatusCode::BAD_REQUEST,
+            Json(ErrorResponse {
+                error: "No image uploaded".to_string(),
+            }),
         ));
     }
 
-    match run_sample_inference(payload) {
-        Ok(result) => {
-            let elapsed_time = start_time.elapsed();
-            info!("Inference completed in: {:.3?}", elapsed_time);
-            Ok((StatusCode::OK, Json(Prediction { result })))
-        }
-        Err(err) => Err(err),
-    }
-}
-
-pub async fn batch_predict(
-    Json(payload): Json<InputBatchData>,
-) -> Result<(StatusCode, Json<BatchPrediction>), (StatusCode, Json<ErrorResponse>)> {
-    info!("Payload: {:?}", &payload.features);
-
-    let start_time = Instant::now();
-    if payload.features.is_empty() {
-        return Err(handle_error(
-            ErrorCode::InvalidInputData,
-            "Empty input for prediction",
-        ));
-    }
-    if payload.features[0].len() != 5 {
-        return Err(handle_error(
-            ErrorCode::InvalidInputData,
-            "Invalid input shape",
-        ));
-    }
-
-    match run_batch_inference(payload) {
-        Ok(results) => {
-            let elapsed_time = start_time.elapsed();
-            info!("Inference completed in: {:.3?}", elapsed_time);
-            Ok((StatusCode::OK, Json(BatchPrediction { results })))
+    match run_classification(image_bytes) {
+        Ok(label) => {
+            log_elapsed_time("Inference", start_time);
+            Ok((StatusCode::OK, Json(ImagePrediction { label })))
         }
         Err(err) => Err(err),
     }

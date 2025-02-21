@@ -9,15 +9,13 @@ mod routes;
 mod types;
 mod utils;
 
-use routes::{batch_predict, predict};
+use routes::classify;
 
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt().with_max_level(Level::INFO).init();
 
-    let app = Router::new()
-        .route("/predict", post(predict))
-        .route("/batch_predict", post(batch_predict));
+    let app = Router::new().route("/classify", post(classify));
     let listener = TcpListener::bind("0.0.0.0:8000").await.unwrap();
 
     info!("AI API server ready!");
