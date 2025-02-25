@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
     unzip \
     cmake \
     libssl-dev \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
 # Download & extract LibTorch
@@ -40,8 +41,14 @@ FROM debian:bookworm-slim
 # Set the working directory
 WORKDIR /app
 
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+   libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
 ENV LIBTORCH=/usr/local/libtorch
 ENV LD_LIBRARY_PATH=${LIBTORCH}/lib:$LD_LIBRARY_PATH
+ENV LD_PRELOAD=$LIBTORCH/lib/libtorch_cuda.so
 
 # Copy LibTorch runtime files
 COPY --from=builder /usr/local/libtorch /usr/local/libtorch
@@ -49,7 +56,7 @@ COPY --from=builder /usr/local/libtorch /usr/local/libtorch
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/target/release/ai_api .
 
-# Copy ONNX model files
+# Copy Pytorch/Torchscript model files
 COPY models models
 
 # ===============================================================================
