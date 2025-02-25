@@ -1,23 +1,17 @@
 use axum::{http::StatusCode, Json};
 use lazy_static::lazy_static;
-use tract_onnx::prelude::*;
+use std::sync::Arc;
+use tch::{CModule, Device};
 
-use crate::config::{IMAGE_CLASS_PATH, ONNX_MODEL_PATH};
+use crate::config::{IMAGE_CLASS_PATH, PYTORCH_MODEL_PATH};
 use crate::errors::{handle_error, ErrorCode, ErrorResponse};
 use crate::utils::classes::load_classes;
 use crate::utils::image::preprocess_image;
 
-type OnnxModel = SimplePlan<TypedFact, Box<dyn TypedOp>, Graph<TypedFact, Box<dyn TypedOp>>>;
-
 lazy_static! {
-    pub static ref MODEL: Arc<OnnxModel> = {
-        let model = onnx()
-            .model_for_path(ONNX_MODEL_PATH)
-            .expect("Failed to load ONNX model")
-            .into_optimized()
-            .expect("Failed to optimize model")
-            .into_runnable()
-            .expect("Failed to make model runnable");
+    pub static ref MODEL: Arc<CModule> = {
+        let model = CModule::load_on_device(PYTORCH_MODEL_PATH, Device::Cuda(0))
+            .expect("Failed to load Torch model");
 
         Arc::new(model)
     };
@@ -30,20 +24,19 @@ pub fn run_classification(
 ) -> Result<String, (StatusCode, Json<ErrorResponse>)> {
     let tensor = preprocess_image(image_bytes)
         .map_err(|err| handle_error(ErrorCode::InvalidInputData, err))?;
-    let result = MODEL
-        .run(tvec!(tensor.into()))
+
+    let device = Device::Cuda(0);
+    let tensor = tensor.to_device(device);
+    let _guard = tch::no_grad_guard();
+
+    let output = MODEL
+        .forward_ts(&[tensor])
         .map_err(|err| handle_error(ErrorCode::InferenceFailed, err))?;
 
-    let probs = result[0]
-        .to_array_view::<f32>()
-        .map_err(|err| handle_error(ErrorCode::OutputConversionFailed, err))?;
-    let (max_idx, _) = probs
-        .iter()
-        .enumerate()
-        .max_by(|a, b| a.1.partial_cmp(b.1).unwrap())
-        .unwrap();
-    if max_idx < CLASSES.len() {
-        return Ok(CLASSES[max_idx].clone());
+    let probs = output.softmax(-1, tch::Kind::Float);
+    let max_idx = probs.argmax(-1, false).int64_value(&[]);
+    if (max_idx as usize) < CLASSES.len() {
+        return Ok(CLASSES[max_idx as usize].clone());
     }
     Err(handle_error(
         ErrorCode::OutputConversionFailed,
