@@ -30,6 +30,8 @@ pub fn perform_inference(tensor: Tensor) -> Result<String, (ErrorCode, String)> 
 
     let probs = output.softmax(-1, tch::Kind::Float);
     let max_idx = probs.argmax(-1, false).int64_value(&[]);
+    drop(output);
+    drop(probs);
     if (max_idx as usize) < CLASSES.len() {
         return Ok(CLASSES[max_idx as usize].clone());
     }
