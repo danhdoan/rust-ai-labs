@@ -4,7 +4,6 @@ use crate::types::{ImageInput, ImagePrediction};
 use axum::{http::StatusCode, Json};
 use base64::decode;
 use std::time::Instant;
-
 use crate::utils::common::log_elapsed_time;
 
 pub async fn classify(
