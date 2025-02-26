@@ -2,7 +2,7 @@ use crate::errors::ErrorResponse;
 use crate::model::run_classification;
 use crate::types::{ImageInput, ImagePrediction};
 use axum::{http::StatusCode, Json};
-use base64::decode;
+use base64::prelude::*;
 use std::time::Instant;
 use crate::utils::common::log_elapsed_time;
 
@@ -10,7 +10,7 @@ pub async fn classify(
     Json(payload): Json<ImageInput>,
 ) -> Result<(StatusCode, Json<ImagePrediction>), (StatusCode, Json<ErrorResponse>)> {
     let start_time = Instant::now();
-    let image_bytes = decode(payload.image).map_err(|_| {
+    let image_bytes = BASE64_STANDARD.decode(payload.image).map_err(|_| {
         (
             StatusCode::BAD_REQUEST,
             Json(ErrorResponse {
