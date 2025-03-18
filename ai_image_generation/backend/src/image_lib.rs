@@ -1,7 +1,11 @@
-use candle_core::{Tensor, DType, Device, Result};
+use base64::{engine::general_purpose, Engine};
+use candle_core::{Tensor, DType, Device };
+use anyhow::{bail, Result};
+use image::{self, ImageReader, ImageBuffer};
+use std::io::Cursor;
 
-pub fn _image_preprocess<T: AsRef<std::path::Path>>(path: T) -> anyhow::Result<Tensor> {
-    let img = image::ImageReader::open(path)?.decode()?;
+pub fn _image_preprocess<T: AsRef<std::path::Path>>(path: T) -> Result<Tensor> {
+    let img = ImageReader::open(path)?.decode()?;
     let (height, width) = (img.height() as usize, img.width() as usize);
     let height = height - height % 32;
     let width = width - width % 32;
@@ -20,20 +24,27 @@ pub fn _image_preprocess<T: AsRef<std::path::Path>>(path: T) -> anyhow::Result<T
     Ok(img)
 }
 
-pub fn save_image<P: AsRef<std::path::Path>>(img: &Tensor, p: P) -> Result<()> {
-    let p = p.as_ref();
+pub fn tensor_to_image(img: &Tensor)
+-> Result<ImageBuffer<image::Rgb<u8>, Vec<u8>>> {
     let (channel, height, width) = img.dims3()?;
     if channel != 3 {
-        candle_core::bail!("save_image expects an input of shape (3, height, width)")
+        bail!("Invalid number of channel for input");
     }
     let img = img.permute((1, 2, 0))?.flatten_all()?;
     let pixels = img.to_vec1::<u8>()?;
     let image: image::ImageBuffer<image::Rgb<u8>, Vec<u8>> =
-        match image::ImageBuffer::from_raw(width as u32, height as u32, pixels) {
-            Some(image) => image,
-            None => candle_core::bail!("error saving image {p:?}"),
-        };
-    image.save(p).map_err(candle_core::Error::wrap)?;
-    Ok(())
+        image::ImageBuffer::from_raw(width as u32, height as u32, pixels)
+        .expect("Failed to convert Tensor to image");
+    Ok(image)
 }
 
+pub fn image_to_base64(image_buffer: image::ImageBuffer<image::Rgb<u8>, Vec<u8>>)
+-> Result<String> {
+    let mut buffer: Vec<u8> = Vec::new();
+    let mut cursor = Cursor::new(&mut buffer);
+
+    image_buffer.write_to(&mut cursor, image::ImageFormat::Png)
+        .expect("Failed to write image to buffer");
+
+    Ok(general_purpose::STANDARD.encode(&buffer))
+}

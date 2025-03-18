@@ -10,17 +10,17 @@ pub struct ErrorResponse {
 
 #[derive(Debug, Serialize)]
 pub enum ErrorCode {
-    InvalidInputData,
-    InferenceFailed,
-    OutputConversionFailed,
+    TextEmbeddingGeneration,
+    Inference,
+    PostProcessing,
 }
 
 impl fmt::Display for ErrorCode {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            ErrorCode::InvalidInputData => write!(f, "Invalid input for inference"),
-            ErrorCode::InferenceFailed => write!(f, "Failed to run inference"),
-            ErrorCode::OutputConversionFailed => write!(f, "Failed to convert inference output"),
+            ErrorCode::TextEmbeddingGeneration => write!(f, "Failed to generate Text embedding"),
+            ErrorCode::Inference => write!(f, "Failed to run inference"),
+            ErrorCode::PostProcessing => write!(f, "Failed to do Post processing"),
         }
     }
 }

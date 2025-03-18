@@ -24,8 +24,8 @@ pub fn run_generation(payload: ImagePrompt)
     info!("{}", format!("Payload: {:?}", payload.prompt));
 
     let uncond_prompt = "";
-    let _ = MODEL.run(&payload.prompt, uncond_prompt)
-        .map_err(|err| handle_error(ErrorCode::InferenceFailed, err.to_string()))?;
+    let image_based64 = MODEL.run(&payload.prompt, uncond_prompt)
+        .map_err(|err| handle_error(ErrorCode::Inference, err.to_string()))?;
 
-    Ok(payload.prompt)
+    Ok(image_based64)
 }
