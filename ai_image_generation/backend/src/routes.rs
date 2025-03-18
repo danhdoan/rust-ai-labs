@@ -1,4 +1,5 @@
 use crate::errors::ErrorResponse;
+use crate::types::ImageResponse;
 use crate::types::ImagePrompt;
 use axum::{http::StatusCode, Json};
 use crate::model::run_generation;
@@ -11,11 +12,11 @@ pub async fn health_check()
 }
 
 pub async fn generate(Json(payload): Json<ImagePrompt>) 
-    -> Result<(StatusCode, String), 
+    -> Result<(StatusCode, Json<ImageResponse>), 
                 (StatusCode, Json<ErrorResponse>)>
 {
     match run_generation(payload) {
-        Ok(msg) => Ok((StatusCode::OK, msg)),
+        Ok(image) => Ok((StatusCode::OK, Json(ImageResponse {image}))),
         Err(err) => Err(err),
     }
 }
