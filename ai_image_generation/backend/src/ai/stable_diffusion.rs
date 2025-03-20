@@ -62,7 +62,8 @@ impl StableDiffusion {
         })
     }
 
-    pub fn run(&self, prompt: &str, neg_prompt: &str) -> Result<String, ErrorCode> {
+    pub async fn run(&self, prompt: &str, neg_prompt: &str) -> Result<String, ErrorCode> {
+        let run_start_t = std::time::Instant::now();
         let guidance_scale = 9.0; 
         let use_guide_scale = guidance_scale > 1.0;
         let dtype = DType::F16;
@@ -141,13 +142,16 @@ impl StableDiffusion {
             let dt = start_time.elapsed().as_secs_f32();
             println!("step {} done, {:.2}s", timestep_index + 1, dt);
         }
-        info!("Image generation done");
-
 
         let image = postprocess(&self.vae, &latents, vae_scale, bsize)
             .map_err(|_| ErrorCode::PostProcessing)?;
-        image_lib::image_to_base64(image)
-            .map_err(|_| ErrorCode::PostProcessing)
+        let run_prx_t = run_start_t.elapsed().as_secs_f32();
+        println!("Inference time: {:.2}s", run_prx_t);
+        info!("Image generation done");
+        let output = image_lib::image_to_base64(image)
+            .map_err(|_| ErrorCode::PostProcessing)?;
+
+        Ok(output)
     }
 }
 
