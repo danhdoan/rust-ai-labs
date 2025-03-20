@@ -9,9 +9,20 @@
 <body>
     <div class="container">
         <h1>AI Image Generator</h1>
+
+        <!-- Prompt Input -->
         <textarea id="prompt" placeholder="Enter your prompt..."></textarea>
+
+        <!-- Negative Prompt Input -->
+        <textarea id="negativePrompt" placeholder="Enter your negative prompt (optional)..."></textarea>
+
+        <!-- Generate Button -->
         <button id="generateBtn">Generate Image</button>
+
+        <!-- Loading Indicator -->
         <div id="loading" class="hidden">🔄 Generating...</div>
+
+        <!-- Display the Generated Image -->
         <img id="image" class="hidden" alt="Generated Image">
     </div>
 

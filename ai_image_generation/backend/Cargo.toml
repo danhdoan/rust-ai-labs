@@ -17,9 +17,10 @@ tracing-subscriber = "0.3.19"
 
 image = "0.25.5"
 anyhow = "1.0.97"
-candle-core = { version = "0.8.2", features = ["cuda"] }
-candle-transformers = "0.8.2"
-candle-nn = { version = "0.8.2", features = ["cuda"] }
+candle-core = { version = "0.8.3", features = ["cuda"] }
+candle-transformers = { version = "0.8.3", features = ["flash-attn"] }
+candle-nn = { version = "0.8.3" }
+candle-flash-attn = { version = "0.8.3" }
 
 safetensors = "0.5.3"
 rand = "0.9.0"

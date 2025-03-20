@@ -11,7 +11,7 @@ pub fn build_unet_model(
 ) -> Result<UNet2DConditionModel> {
     let unet_weights = ModelFile::Unet.get(unet_weight_path.to_string())?;
     let in_channels = 4;
-    let use_flash_attn = false;
+    let use_flash_attn = true;
     let unet = sd_config.build_unet(unet_weights, device, in_channels, use_flash_attn, DType::F16)?;
 
     Ok(unet)

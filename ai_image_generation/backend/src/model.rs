@@ -21,10 +21,10 @@ lazy_static! {
 
 pub fn run_generation(payload: ImagePrompt)
     -> Result<String, (StatusCode, Json<ErrorResponse>)> {
-    info!("{}", format!("Payload: {:?}", payload.prompt));
+    info!("{}", format!("Prompt: {:?}", payload.prompt));
+    info!("{}", format!("Negative Prompt: {:?}", payload.neg_prompt));
 
-    let uncond_prompt = "";
-    let image_based64 = MODEL.run(&payload.prompt, uncond_prompt)
+    let image_based64 = MODEL.run(&payload.prompt, &payload.neg_prompt)
         .map_err(|err| handle_error(ErrorCode::Inference, err.to_string()))?;
 
     Ok(image_based64)
