@@ -15,7 +15,7 @@ pub async fn generate(Json(payload): Json<ImagePrompt>)
     -> Result<(StatusCode, Json<ImageResponse>), 
                 (StatusCode, Json<ErrorResponse>)>
 {
-    match run_generation(payload) {
+    match run_generation(payload).await {
         Ok(image) => Ok((StatusCode::OK, Json(ImageResponse {image}))),
         Err(err) => Err(err),
     }

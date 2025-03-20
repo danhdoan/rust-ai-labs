@@ -19,12 +19,13 @@ lazy_static! {
     };
 }
 
-pub fn run_generation(payload: ImagePrompt)
+pub async fn run_generation(payload: ImagePrompt)
     -> Result<String, (StatusCode, Json<ErrorResponse>)> {
     info!("{}", format!("Prompt: {:?}", payload.prompt));
     info!("{}", format!("Negative Prompt: {:?}", payload.neg_prompt));
 
     let image_based64 = MODEL.run(&payload.prompt, &payload.neg_prompt)
+        .await
         .map_err(|err| handle_error(ErrorCode::Inference, err.to_string()))?;
 
     Ok(image_based64)
