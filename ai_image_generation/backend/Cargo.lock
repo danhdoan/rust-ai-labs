@@ -48,6 +48,9 @@ name = "anyhow"
 version = "1.0.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dcfed56ad506cb2c684a14971b8861fdc3baaaae314b9e5f9bb532cbe3ba7a4f"
+dependencies = [
+ "backtrace",
+]
 
 [[package]]
 name = "arbitrary"
@@ -167,6 +170,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "candle-core",
+ "candle-flash-attn",
  "candle-nn",
  "candle-transformers",
  "image",
@@ -371,6 +375,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "candle-flash-attn"
+version = "0.8.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "820ba862d9e5ba5aad2006334880777dbc01634a46332b5422a6ee7042b6fc14"
+dependencies = [
+ "anyhow",
+ "bindgen_cuda",
+ "candle-core",
+ "half",
+]
+
+[[package]]
 name = "candle-kernels"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -402,6 +418,7 @@ checksum = "bf2ddc361689defc282e870f18b138940b2548276d075801052eee5d11293029"
 dependencies = [
  "byteorder",
  "candle-core",
+ "candle-flash-attn",
  "candle-nn",
  "fancy-regex",
  "num-traits",

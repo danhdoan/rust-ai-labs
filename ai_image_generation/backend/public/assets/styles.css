@@ -17,21 +17,36 @@ body {
 }
 
 textarea {
-    width: 100%;
-    height: 100px;
+    width: calc(100% - 20px);
+    height: 80px;
     padding: 10px;
     border-radius: 8px;
     border: 1px solid #ccc;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(2, 76, 170, 0.5);
     color: white;
     font-size: 16px;
     resize: none;
+    transition: all 0.3s ease-in-out;
 }
 
 textarea:focus {
     outline: none;
     border-color: #4a90e2;
     box-shadow: 0 0 8px rgba(74, 144, 226, 0.8);
+}
+
+#negativePrompt {
+    border-color: #ff7e5f;
+    background: rgba(255, 100, 100, 0.2);
+}
+
+#negativePrompt::placeholder {
+    color: rgba(255, 150, 150, 0.7);
+}
+
+#negativePrompt:focus {
+    border-color: #ff4a4a;
+    box-shadow: 0 0 8px rgba(255, 74, 74, 0.8);
 }
 
 button {
@@ -52,12 +67,10 @@ button:hover {
     box-shadow: 0px 6px 15px rgba(0, 0, 0, 0.5);
 }
 
-/* 🌀 Loading Indicator */
 .hidden {
     display: none;
 }
 
-/* 🖼️ Stylish Image Display */
 img {
     max-width: 100%;
     margin-top: 20px;
@@ -68,7 +81,6 @@ img {
     transition: opacity 0.5s ease-in-out, transform 0.5s ease-in-out;
 }
 
-/* 🖼️ Image Appears Smoothly */
 img.loaded {
     opacity: 1;
     transform: translateY(0);

@@ -1,5 +1,6 @@
 document.getElementById("generateBtn").addEventListener("click", async function() {
     const prompt = document.getElementById("prompt").value;
+    const negativePrompt = document.getElementById("negativePrompt").value.trim();
     const loading = document.getElementById("loading");
     const image = document.getElementById("image");
 
@@ -16,7 +17,10 @@ document.getElementById("generateBtn").addEventListener("click", async function(
         const response = await fetch("http://10.0.30.32:8000/generate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt }),
+            body: JSON.stringify({
+              prompt: prompt,
+              neg_prompt: negativePrompt
+            })
         });
 
         if (!response.ok) {

@@ -33,7 +33,7 @@ impl StableDiffusion {
             .map_err(|_| ErrorCode::Inference);
 
         // build Stable Diffusion config
-        let sliced_attention_size: Option<usize> = None;
+        let sliced_attention_size: Option<usize> = Some(512);
         let (height, width) = (768, 768);
         let sd_config = stable_diffusion::StableDiffusionConfig::v2_1(
             sliced_attention_size, Some(height), Some(width)
@@ -62,12 +62,12 @@ impl StableDiffusion {
         })
     }
 
-    pub fn run(&self, prompt: &str, uncond_prompt: &str) -> Result<String, ErrorCode> {
+    pub fn run(&self, prompt: &str, neg_prompt: &str) -> Result<String, ErrorCode> {
         let guidance_scale = 9.0; 
         let use_guide_scale = guidance_scale > 1.0;
         let dtype = DType::F16;
 
-        let n_steps = 20;
+        let n_steps = 30;
         let mut scheduler = self.sd_config.build_scheduler(n_steps)
             .map_err(|_| ErrorCode::Inference)?;
 
@@ -76,7 +76,7 @@ impl StableDiffusion {
         let text_embeddings: Vec<Tensor> = vec![
             generate_text_embeddings(
                 prompt,
-                uncond_prompt,
+                neg_prompt,
                 &self.tokenizer,
                 self.tokenizer_pad_id,
                 &self.sd_config,
@@ -127,11 +127,11 @@ impl StableDiffusion {
             let noise_pred = {
                 let noise_pred = noise_pred.chunk(2, 0).map_err(|_| ErrorCode::Inference)?;
 
-                let (noise_pred_uncond, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
-                let diff = (noise_pred_text - noise_pred_uncond)
+                let (noise_pred_neg, noise_pred_text) = (&noise_pred[0], &noise_pred[1]);
+                let diff = (noise_pred_text - noise_pred_neg)
                     .map_err(|_| ErrorCode::Inference)?;
 
-                (noise_pred_uncond + diff * guidance_scale)
+                (noise_pred_neg + diff * guidance_scale)
                     .map_err(|_| ErrorCode::Inference)?
             };
 
